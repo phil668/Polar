@@ -1,15 +1,18 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
+use crate::output::Output;
 use crate::reader::Reader;
 
 pub struct Editor {
     reader: Reader,
+    output: Output,
 }
 
 impl Editor {
     pub fn new() -> Self {
         Editor {
             reader: Reader::new(),
+            output: Output::new(),
         }
     }
 
@@ -26,6 +29,8 @@ impl Editor {
     }
 
     pub fn run(&self) -> crossterm::Result<bool> {
+        // 每次run之前都把屏幕清空 重新渲染内容
+        self.output.refresh_screen()?;
         self.process_keypress()
     }
 }

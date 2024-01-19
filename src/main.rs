@@ -1,5 +1,6 @@
 mod cleanup;
 mod editor;
+mod output;
 mod reader;
 use cleanup::CleanUp;
 use editor::Editor;
