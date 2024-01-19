@@ -4,6 +4,8 @@ use crossterm::{cursor, execute, queue, terminal};
 
 use crate::editor_contents::EditorContents;
 
+static VERSION: &str = "1.0.0";
+
 pub struct Output {
     // (columns,rows)
     win_size: (usize, usize),
@@ -22,14 +24,29 @@ impl Output {
     }
 
     fn draw_rows(&mut self) {
+        let columns = self.win_size.0;
         let rows = self.win_size.1;
         for i in 0..rows {
+            if i == rows / 3 {
+                let mut welcome_str = format!("\u{2B50} Polar Editor --- Version {}", VERSION);
+                if welcome_str.len() > columns {
+                    welcome_str.truncate(columns)
+                }
+                let mut padding = (columns - welcome_str.len()) / 2;
+                if padding != 0 {
+                    self.editor_contents.push('~');
+                    padding -= 1;
+                }
+                (0..padding).for_each(|_| self.editor_contents.push(' '));
+                self.editor_contents.push_str(&welcome_str)
+            } else {
+                self.editor_contents.push('~');
+            }
             queue!(
                 self.editor_contents,
                 terminal::Clear(terminal::ClearType::UntilNewLine)
             )
             .unwrap();
-            self.editor_contents.push('~');
             if i < rows - 1 {
                 self.editor_contents.push_str("\r\n")
             }
