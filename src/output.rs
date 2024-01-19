@@ -39,11 +39,12 @@ impl Output {
     pub fn refresh_screen(&mut self) -> crossterm::Result<()> {
         queue!(
             self.editor_contents,
+            cursor::Hide,
             terminal::Clear(terminal::ClearType::All),
             cursor::MoveTo(0, 0)
         )?;
         self.draw_rows();
-        execute!(self.editor_contents, cursor::MoveTo(0, 0))?;
+        execute!(self.editor_contents, cursor::MoveTo(0, 0), cursor::Show)?;
         self.editor_contents.flush()
     }
 }
