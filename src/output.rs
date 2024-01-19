@@ -9,7 +9,7 @@ impl Output {
         Output
     }
 
-    fn clear_screen() -> crossterm::Result<()> {
+    pub fn clear_screen() -> crossterm::Result<()> {
         execute!(stdout(), terminal::Clear(terminal::ClearType::All))
     }
 
