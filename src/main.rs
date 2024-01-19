@@ -1,5 +1,6 @@
 mod cleanup;
 mod editor;
+mod editor_contents;
 mod output;
 mod reader;
 use cleanup::CleanUp;
@@ -11,7 +12,7 @@ fn main() -> crossterm::Result<()> {
     let _clean_up = CleanUp;
     terminal::enable_raw_mode()?;
 
-    let editor = Editor::new();
+    let mut editor = Editor::new();
     while editor.run()? {}
 
     Ok(())

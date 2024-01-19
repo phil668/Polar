@@ -28,7 +28,7 @@ impl Editor {
         Ok(true)
     }
 
-    pub fn run(&self) -> crossterm::Result<bool> {
+    pub fn run(&mut self) -> crossterm::Result<bool> {
         // 每次run之前都把屏幕清空 重新渲染内容
         self.output.refresh_screen()?;
         self.process_keypress()

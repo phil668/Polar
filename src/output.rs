@@ -1,10 +1,13 @@
 use std::io::{stdout, Write};
 
-use crossterm::{cursor, execute, terminal};
+use crossterm::{cursor, execute, queue, terminal};
+
+use crate::editor_contents::EditorContents;
 
 pub struct Output {
     // (columns,rows)
     win_size: (usize, usize),
+    editor_contents: EditorContents,
 }
 
 impl Output {
@@ -12,18 +15,19 @@ impl Output {
         let win_size = terminal::size()
             .map(|(x, y)| (x as usize, y as usize))
             .unwrap();
-        Output { win_size }
+        Output {
+            win_size,
+            editor_contents: EditorContents::new(),
+        }
     }
 
-    fn draw_rows(&self) {
+    fn draw_rows(&mut self) {
         let rows = self.win_size.1;
         for i in 0..rows {
-            print!("~");
+            self.editor_contents.push('~');
             if i < rows - 1 {
-                println!("\r")
+                self.editor_contents.push_str("\r\n")
             }
-            // 保证所有缓冲区的内容都被输出到终端上
-            stdout().flush().unwrap();
         }
     }
 
@@ -32,9 +36,14 @@ impl Output {
         execute!(stdout(), cursor::MoveTo(0, 0))
     }
 
-    pub fn refresh_screen(&self) -> crossterm::Result<()> {
-        Self::clear_screen()?;
+    pub fn refresh_screen(&mut self) -> crossterm::Result<()> {
+        queue!(
+            self.editor_contents,
+            terminal::Clear(terminal::ClearType::All),
+            cursor::MoveTo(0, 0)
+        )?;
         self.draw_rows();
-        execute!(stdout(), cursor::MoveTo(0, 0))
+        execute!(self.editor_contents, cursor::MoveTo(0, 0))?;
+        self.editor_contents.flush()
     }
 }
