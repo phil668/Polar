@@ -17,12 +17,33 @@ impl Editor {
     }
 
     // 处理用户输入
-    fn process_keypress(&self) -> crossterm::Result<bool> {
+    fn process_keypress(&mut self) -> crossterm::Result<bool> {
         match self.reader.read_key()? {
             KeyEvent {
                 code: KeyCode::Char('q'),
                 modifiers: KeyModifiers::CONTROL,
             } => return Ok(false),
+            // move cursor
+            KeyEvent {
+                code:
+                    direction @ (KeyCode::Up
+                    | KeyCode::Down
+                    | KeyCode::Left
+                    | KeyCode::Right
+                    | KeyCode::Home
+                    | KeyCode::End),
+                modifiers: KeyModifiers::NONE,
+            } => self.output.move_cursor(direction),
+            KeyEvent {
+                code: val @ (KeyCode::PageUp | KeyCode::PageDown),
+                modifiers: KeyModifiers::NONE,
+            } => (0..self.output.win_size.1).for_each(|_| {
+                self.output.move_cursor(if matches!(val, KeyCode::PageUp) {
+                    KeyCode::Up
+                } else {
+                    KeyCode::Down
+                });
+            }),
             _ => {}
         }
         Ok(true)

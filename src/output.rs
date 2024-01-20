@@ -1,15 +1,16 @@
 use std::io::{stdout, Write};
 
-use crossterm::{cursor, execute, queue, terminal};
+use crossterm::{cursor, event::KeyCode, execute, queue, terminal};
 
-use crate::editor_contents::EditorContents;
+use crate::{cursor_controller::CursorController, editor_contents::EditorContents};
 
 static VERSION: &str = "1.0.0";
 
 pub struct Output {
     // (columns,rows)
-    win_size: (usize, usize),
+    pub win_size: (usize, usize),
     editor_contents: EditorContents,
+    pub cursor_controller: CursorController,
 }
 
 impl Output {
@@ -20,6 +21,7 @@ impl Output {
         Output {
             win_size,
             editor_contents: EditorContents::new(),
+            cursor_controller: CursorController::new(win_size),
         }
     }
 
@@ -53,6 +55,10 @@ impl Output {
         }
     }
 
+    pub fn move_cursor(&mut self, dir: KeyCode) {
+        self.cursor_controller.move_cursor(dir)
+    }
+
     pub fn clear_screen() -> crossterm::Result<()> {
         execute!(stdout(), terminal::Clear(terminal::ClearType::All))?;
         execute!(stdout(), cursor::MoveTo(0, 0))
@@ -61,7 +67,13 @@ impl Output {
     pub fn refresh_screen(&mut self) -> crossterm::Result<()> {
         queue!(self.editor_contents, cursor::Hide, cursor::MoveTo(0, 0))?;
         self.draw_rows();
-        execute!(self.editor_contents, cursor::MoveTo(0, 0), cursor::Show)?;
+        let cursor_x = self.cursor_controller.cursor_x;
+        let cursor_y = self.cursor_controller.cursor_y;
+        execute!(
+            self.editor_contents,
+            cursor::MoveTo(cursor_x as u16, cursor_y as u16),
+            cursor::Show
+        )?;
         self.editor_contents.flush()
     }
 }
