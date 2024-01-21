@@ -1,7 +1,4 @@
-use std::{
-    cmp,
-    io::{stdout, Write},
-};
+use std::io::{stdout, Write};
 
 use crossterm::{cursor, event::KeyCode, execute, queue, terminal};
 
@@ -36,17 +33,31 @@ impl Output {
         let columns = self.win_size.0;
         let rows = self.win_size.1;
         for i in 0..rows {
-            if i >= self.editor_rows.number_of_rows() {
+            let file_row = i + self.cursor_controller.row_offset;
+            if file_row >= self.editor_rows.number_of_rows() {
                 if self.editor_rows.number_of_rows() == 0 && i == rows / 3 {
                     self.draw_welcome_message()
                 } else {
                     self.editor_contents.push('~');
                 }
             } else {
+                let row = self.editor_rows.get_row(file_row);
+                let column_offset = self.cursor_controller.column_offset;
+                // 当前行绘制文本内容的长度
+                let len = if row.len() < column_offset {
+                    0
+                } else {
+                    let len = row.len() - column_offset;
+                    if len > columns {
+                        columns
+                    } else {
+                        len
+                    }
+                };
+                let start_index = if len == 0 { 0 } else { column_offset };
                 // 绘制文件内容
-                let len = cmp::min(self.editor_rows.get_row(i).len(), columns);
                 self.editor_contents
-                    .push_str(&self.editor_rows.get_row(i)[0..len])
+                    .push_str(&self.editor_rows.get_row(file_row)[start_index..len + start_index])
             }
 
             queue!(
@@ -77,7 +88,7 @@ impl Output {
     }
 
     pub fn move_cursor(&mut self, dir: KeyCode) {
-        self.cursor_controller.move_cursor(dir)
+        self.cursor_controller.move_cursor(dir, &self.editor_rows)
     }
 
     pub fn clear_screen() -> crossterm::Result<()> {
@@ -86,10 +97,11 @@ impl Output {
     }
 
     pub fn refresh_screen(&mut self) -> crossterm::Result<()> {
+        self.cursor_controller.scroll();
         queue!(self.editor_contents, cursor::Hide, cursor::MoveTo(0, 0))?;
         self.draw_rows();
-        let cursor_x = self.cursor_controller.cursor_x;
-        let cursor_y = self.cursor_controller.cursor_y;
+        let cursor_x = self.cursor_controller.cursor_x - self.cursor_controller.column_offset;
+        let cursor_y = self.cursor_controller.cursor_y - self.cursor_controller.row_offset;
         execute!(
             self.editor_contents,
             cursor::MoveTo(cursor_x as u16, cursor_y as u16),
