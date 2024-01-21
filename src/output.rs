@@ -1,16 +1,22 @@
-use std::io::{stdout, Write};
+use std::{
+    cmp,
+    io::{stdout, Write},
+};
 
 use crossterm::{cursor, event::KeyCode, execute, queue, terminal};
 
-use crate::{cursor_controller::CursorController, editor_contents::EditorContents};
+use crate::{
+    cursor_controller::CursorController, editor_contents::EditorContents, editor_rows::EditorRows,
+};
 
 static VERSION: &str = "1.0.0";
 
 pub struct Output {
     // (columns,rows)
     pub win_size: (usize, usize),
-    editor_contents: EditorContents,
     pub cursor_controller: CursorController,
+    editor_contents: EditorContents,
+    editor_rows: EditorRows,
 }
 
 impl Output {
@@ -22,6 +28,7 @@ impl Output {
             win_size,
             editor_contents: EditorContents::new(),
             cursor_controller: CursorController::new(win_size),
+            editor_rows: EditorRows::new(),
         }
     }
 
@@ -29,21 +36,19 @@ impl Output {
         let columns = self.win_size.0;
         let rows = self.win_size.1;
         for i in 0..rows {
-            if i == rows / 3 {
-                let mut welcome_str = format!("\u{2B50} Polar Editor --- Version {}", VERSION);
-                if welcome_str.len() > columns {
-                    welcome_str.truncate(columns)
-                }
-                let mut padding = (columns - welcome_str.len()) / 2;
-                if padding != 0 {
+            if i >= self.editor_rows.number_of_rows() {
+                if self.editor_rows.number_of_rows() == 0 && i == rows / 3 {
+                    self.draw_welcome_message()
+                } else {
                     self.editor_contents.push('~');
-                    padding -= 1;
                 }
-                (0..padding).for_each(|_| self.editor_contents.push(' '));
-                self.editor_contents.push_str(&welcome_str)
             } else {
-                self.editor_contents.push('~');
+                // 绘制文件内容
+                let len = cmp::min(self.editor_rows.get_row(i).len(), columns);
+                self.editor_contents
+                    .push_str(&self.editor_rows.get_row(i)[0..len])
             }
+
             queue!(
                 self.editor_contents,
                 terminal::Clear(terminal::ClearType::UntilNewLine)
@@ -53,6 +58,22 @@ impl Output {
                 self.editor_contents.push_str("\r\n")
             }
         }
+    }
+
+    fn draw_welcome_message(&mut self) {
+        let columns = self.win_size.0;
+
+        let mut welcome_str = format!("\u{2B50} Polar Editor --- Version {}", VERSION);
+        if welcome_str.len() > columns {
+            welcome_str.truncate(columns)
+        }
+        let mut padding = (columns - welcome_str.len()) / 2;
+        if padding != 0 {
+            self.editor_contents.push('~');
+            padding -= 1;
+        }
+        (0..padding).for_each(|_| self.editor_contents.push(' '));
+        self.editor_contents.push_str(&welcome_str)
     }
 
     pub fn move_cursor(&mut self, dir: KeyCode) {

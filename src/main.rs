@@ -2,6 +2,7 @@ mod cleanup;
 mod cursor_controller;
 mod editor;
 mod editor_contents;
+mod editor_rows;
 mod output;
 mod reader;
 use cleanup::CleanUp;
