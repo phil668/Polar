@@ -41,7 +41,7 @@ impl Output {
                     self.editor_contents.push('~');
                 }
             } else {
-                let row = self.editor_rows.get_row(file_row);
+                let row: &String = self.editor_rows.get_render(file_row);
                 let column_offset = self.cursor_controller.column_offset;
                 // 当前行绘制文本内容的长度
                 let len = if row.len() < column_offset {
@@ -57,7 +57,7 @@ impl Output {
                 let start_index = if len == 0 { 0 } else { column_offset };
                 // 绘制文件内容
                 self.editor_contents
-                    .push_str(&self.editor_rows.get_row(file_row)[start_index..len + start_index])
+                    .push_str(&row[start_index..len + start_index])
             }
 
             queue!(
